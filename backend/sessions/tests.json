@@ -1,0 +1,11 @@
+{
+  "tests": [
+    {
+      "name": "Get active sessions count",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "skip"
+    }
+  ]
+}

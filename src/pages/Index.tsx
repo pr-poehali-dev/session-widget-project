@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
@@ -8,24 +8,44 @@ const Index = () => {
   const [sessionCount, setSessionCount] = useState(3);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320');
+        const data = await response.json();
+        setSessionCount(data.active_sessions);
+      } catch (error) {
+        console.error('Failed to fetch sessions:', error);
+      }
+    };
+
+    fetchSessions();
+    const interval = setInterval(fetchSessions, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const widgetCode = `<!-- Active Sessions Widget -->
 <div id="active-sessions-widget" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
-  <div style="background:white;border-radius:12px;padding:16px 24px;box-shadow:0 4px 12px rgba(0,0,0,0.1);display:flex;align-items:center;gap:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-    <div style="width:8px;height:8px;background:#0EA5E9;border-radius:50%;animation:pulse 2s infinite;"></div>
-    <span style="font-size:14px;color:#1A1F2C;font-weight:500;"><span id="session-count">3</span> активных</span>
+  <div style="background:white;border-radius:50%;width:56px;height:56px;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;gap:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </svg>
+    <span style="font-size:16px;color:#1A1F2C;font-weight:600;" id="session-count">3</span>
   </div>
 </div>
-<style>
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-</style>
 <script>
-setInterval(() => {
-  const count = Math.floor(Math.random() * 10) + 1;
-  document.getElementById('session-count').textContent = count;
-}, 5000);
+function updateSessions() {
+  fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('session-count').textContent = data.active_sessions;
+    });
+}
+updateSessions();
+setInterval(updateSessions, 5000);
 </script>`;
 
   const copyToClipboard = () => {
@@ -58,10 +78,10 @@ setInterval(() => {
             
             <div className="bg-gray-100 rounded-lg p-8 min-h-[300px] relative">
               <div className="absolute bottom-6 right-6">
-                <div className="bg-white rounded-xl px-6 py-4 shadow-lg flex items-center gap-3">
-                  <div className="w-2 h-2 bg-secondary rounded-full animate-pulse-glow"></div>
-                  <span className="text-sm font-medium text-primary">
-                    {sessionCount} активных
+                <div className="bg-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center gap-1.5">
+                  <Icon name="Users" size={16} className="text-orange-500" />
+                  <span className="text-base font-semibold text-primary">
+                    {sessionCount}
                   </span>
                 </div>
               </div>
@@ -73,7 +93,15 @@ setInterval(() => {
             </div>
             
             <Button
-              onClick={() => setSessionCount(Math.floor(Math.random() * 10) + 1)}
+              onClick={async () => {
+                try {
+                  const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320');
+                  const data = await response.json();
+                  setSessionCount(data.active_sessions);
+                } catch (error) {
+                  console.error('Failed to fetch sessions:', error);
+                }
+              }}
               variant="outline"
               className="w-full mt-4"
             >
