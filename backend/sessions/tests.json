@@ -6,6 +6,14 @@
       "path": "/",
       "expectedStatus": 200,
       "bodyMatcher": "skip"
+    },
+    {
+      "name": "Register new session",
+      "method": "POST",
+      "path": "/",
+      "body": "{\"session_id\": \"test-session-123\"}",
+      "expectedStatus": 200,
+      "bodyMatcher": "skip"
     }
   ]
 }
