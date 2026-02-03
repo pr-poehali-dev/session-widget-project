@@ -25,8 +25,6 @@ const Index = () => {
     };
 
     registerSession();
-    const interval = setInterval(registerSession, 30000);
-    return () => clearInterval(interval);
   }, [sessionId]);
 
   const widgetCode = `<!-- Active Sessions Widget -->
@@ -43,19 +41,15 @@ const Index = () => {
 </div>
 <script>
 const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-function registerSession() {
-  fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: sessionId })
-  })
-  .then(r => r.json())
-  .then(data => {
-    document.getElementById('session-count').textContent = data.active_sessions;
-  });
-}
-registerSession();
-setInterval(registerSession, 30000);
+fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ session_id: sessionId })
+})
+.then(r => r.json())
+.then(data => {
+  document.getElementById('session-count').textContent = data.active_sessions;
+});
 </script>`;
 
   const copyToClipboard = () => {
@@ -163,9 +157,9 @@ setInterval(registerSession, 30000);
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <Icon name="Zap" size={24} className="text-secondary" />
               </div>
-              <h3 className="font-semibold mb-2">Реальное время</h3>
+              <h3 className="font-semibold mb-2">Умный подсчёт</h3>
               <p className="text-sm text-muted-foreground">
-                Счётчик обновляется автоматически каждые 30 секунд
+                Регистрация при открытии страницы, активные за последние 5 минут
               </p>
             </div>
             
