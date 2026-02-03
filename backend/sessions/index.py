@@ -1,6 +1,5 @@
 import json
 import os
-import psycopg2
 
 def handler(event: dict, context) -> dict:
     """API для отслеживания активных сессий на сайте в реальном времени"""
@@ -20,18 +19,30 @@ def handler(event: dict, context) -> dict:
             'isBase64Encoded': False
         }
     
-    conn = None
     try:
-        conn = psycopg2.connect(os.environ['DATABASE_URL'])
+        import psycopg2
+        
+        dsn = os.environ['DATABASE_URL']
+        conn = psycopg2.connect(dsn)
+        conn.autocommit = True
         cur = conn.cursor()
-        schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
-        cur.execute(f'SET search_path TO {schema}')
+        
+        schema = 't_p20980907_session_widget_proje'
         
         if method == 'POST':
-            body = json.loads(event.get('body', '{}'))
-            session_id = body.get('session_id')
+            body_str = event.get('body', '{}')
+            if isinstance(body_str, str):
+                body = json.loads(body_str)
+            else:
+                body = body_str
+            
+            if isinstance(body, dict):
+                session_id = body.get('session_id')
+            else:
+                session_id = None
             
             if not session_id:
+                conn.close()
                 return {
                     'statusCode': 400,
                     'headers': {
@@ -42,19 +53,22 @@ def handler(event: dict, context) -> dict:
                     'isBase64Encoded': False
                 }
             
-            cur.execute('''
-                INSERT INTO sessions (session_id, last_active, created_at)
+            insert_query = f'''
+                INSERT INTO {schema}.sessions (session_id, last_active, created_at)
                 VALUES (%s, NOW(), NOW())
                 ON CONFLICT (session_id)
                 DO UPDATE SET last_active = NOW()
-            ''', (session_id,))
-            conn.commit()
+            '''
+            cur.execute(insert_query, (session_id,))
             
-            cur.execute('''
-                SELECT COUNT(*) FROM sessions
+            count_query = f'''
+                SELECT COUNT(*) FROM {schema}.sessions
                 WHERE last_active > NOW() - INTERVAL '5 minutes'
-            ''')
+            '''
+            cur.execute(count_query)
             active_count = cur.fetchone()[0]
+            
+            conn.close()
             
             return {
                 'statusCode': 200,
@@ -70,11 +84,14 @@ def handler(event: dict, context) -> dict:
             }
         
         elif method == 'GET':
-            cur.execute('''
-                SELECT COUNT(*) FROM sessions
+            count_query = f'''
+                SELECT COUNT(*) FROM {schema}.sessions
                 WHERE last_active > NOW() - INTERVAL '5 minutes'
-            ''')
+            '''
+            cur.execute(count_query)
             active_count = cur.fetchone()[0]
+            
+            conn.close()
             
             return {
                 'statusCode': 200,
@@ -88,6 +105,7 @@ def handler(event: dict, context) -> dict:
                 'isBase64Encoded': False
             }
         
+        conn.close()
         return {
             'statusCode': 405,
             'headers': {
@@ -99,15 +117,14 @@ def handler(event: dict, context) -> dict:
         }
     
     except Exception as e:
+        import traceback
+        error_detail = f"{str(e)}\\n{traceback.format_exc()}"
         return {
             'statusCode': 500,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps({'error': str(e)}),
+            'body': json.dumps({'error': error_detail}),
             'isBase64Encoded': False
         }
-    finally:
-        if conn:
-            conn.close()

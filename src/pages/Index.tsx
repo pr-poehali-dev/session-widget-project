@@ -5,24 +5,29 @@ import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
-  const [sessionCount, setSessionCount] = useState(3);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchSessions = async () => {
+    const registerSession = async () => {
       try {
-        const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320');
+        const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
         const data = await response.json();
         setSessionCount(data.active_sessions);
       } catch (error) {
-        console.error('Failed to fetch sessions:', error);
+        console.error('Failed to register session:', error);
       }
     };
 
-    fetchSessions();
-    const interval = setInterval(fetchSessions, 5000);
+    registerSession();
+    const interval = setInterval(registerSession, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [sessionId]);
 
   const widgetCode = `<!-- Active Sessions Widget -->
 <div id="active-sessions-widget" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
@@ -33,19 +38,24 @@ const Index = () => {
       <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
       <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
     </svg>
-    <span style="font-size:16px;color:#1A1F2C;font-weight:600;" id="session-count">3</span>
+    <span style="font-size:16px;color:#1A1F2C;font-weight:600;" id="session-count">0</span>
   </div>
 </div>
 <script>
-function updateSessions() {
-  fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320')
-    .then(r => r.json())
-    .then(data => {
-      document.getElementById('session-count').textContent = data.active_sessions;
-    });
+const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+function registerSession() {
+  fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId })
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('session-count').textContent = data.active_sessions;
+  });
 }
-updateSessions();
-setInterval(updateSessions, 5000);
+registerSession();
+setInterval(registerSession, 30000);
 </script>`;
 
   const copyToClipboard = () => {
@@ -95,11 +105,15 @@ setInterval(updateSessions, 5000);
             <Button
               onClick={async () => {
                 try {
-                  const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320');
+                  const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                  });
                   const data = await response.json();
                   setSessionCount(data.active_sessions);
                 } catch (error) {
-                  console.error('Failed to fetch sessions:', error);
+                  console.error('Failed to register session:', error);
                 }
               }}
               variant="outline"
@@ -151,7 +165,7 @@ setInterval(updateSessions, 5000);
               </div>
               <h3 className="font-semibold mb-2">Реальное время</h3>
               <p className="text-sm text-muted-foreground">
-                Счётчик обновляется автоматически каждые 5 секунд
+                Счётчик обновляется автоматически каждые 30 секунд
               </p>
             </div>
             
