@@ -15,7 +15,7 @@ const Index = () => {
         const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: sessionId })
+          body: JSON.stringify({ session_id: sessionId, action: 'start' })
         });
         const data = await response.json();
         setSessionCount(data.active_sessions);
@@ -24,7 +24,22 @@ const Index = () => {
       }
     };
 
+    const endSession = () => {
+      navigator.sendBeacon(
+        'https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320',
+        JSON.stringify({ session_id: sessionId, action: 'end' })
+      );
+    };
+
     registerSession();
+
+    window.addEventListener('beforeunload', endSession);
+    window.addEventListener('pagehide', endSession);
+
+    return () => {
+      window.removeEventListener('beforeunload', endSession);
+      window.removeEventListener('pagehide', endSession);
+    };
   }, [sessionId]);
 
   const widgetCode = `<!-- Active Sessions Widget -->
@@ -44,11 +59,18 @@ const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).sub
 fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ session_id: sessionId })
+  body: JSON.stringify({ session_id: sessionId, action: 'start' })
 })
 .then(r => r.json())
 .then(data => {
   document.getElementById('session-count').textContent = data.active_sessions;
+});
+
+window.addEventListener('beforeunload', function() {
+  navigator.sendBeacon(
+    'https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320',
+    JSON.stringify({ session_id: sessionId, action: 'end' })
+  );
 });
 </script>`;
 
@@ -100,14 +122,12 @@ fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
               onClick={async () => {
                 try {
                   const response = await fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session_id: sessionId })
+                    method: 'GET'
                   });
                   const data = await response.json();
                   setSessionCount(data.active_sessions);
                 } catch (error) {
-                  console.error('Failed to register session:', error);
+                  console.error('Failed to fetch session count:', error);
                 }
               }}
               variant="outline"
@@ -157,9 +177,9 @@ fetch('https://functions.poehali.dev/e5429777-9ed6-4868-9b2d-7d757010c320', {
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <Icon name="Zap" size={24} className="text-secondary" />
               </div>
-              <h3 className="font-semibold mb-2">Умный подсчёт</h3>
+              <h3 className="font-semibold mb-2">Точный подсчёт</h3>
               <p className="text-sm text-muted-foreground">
-                Регистрация при открытии страницы, активные за последние 5 минут
+                Регистрация при открытии, отметка при закрытии страницы
               </p>
             </div>
             

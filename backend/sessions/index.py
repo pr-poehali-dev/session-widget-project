@@ -38,8 +38,10 @@ def handler(event: dict, context) -> dict:
             
             if isinstance(body, dict):
                 session_id = body.get('session_id')
+                action = body.get('action', 'start')
             else:
                 session_id = None
+                action = 'start'
             
             if not session_id:
                 conn.close()
@@ -53,13 +55,20 @@ def handler(event: dict, context) -> dict:
                     'isBase64Encoded': False
                 }
             
-            insert_query = f'''
-                INSERT INTO {schema}.sessions (session_id, last_active, created_at)
-                VALUES (%s, NOW(), NOW())
-                ON CONFLICT (session_id)
-                DO UPDATE SET last_active = NOW()
-            '''
-            cur.execute(insert_query, (session_id,))
+            if action == 'end':
+                delete_query = f'''
+                    DELETE FROM {schema}.sessions
+                    WHERE session_id = %s
+                '''
+                cur.execute(delete_query, (session_id,))
+            else:
+                insert_query = f'''
+                    INSERT INTO {schema}.sessions (session_id, last_active, created_at)
+                    VALUES (%s, NOW(), NOW())
+                    ON CONFLICT (session_id)
+                    DO UPDATE SET last_active = NOW()
+                '''
+                cur.execute(insert_query, (session_id,))
             
             count_query = f'''
                 SELECT COUNT(*) FROM {schema}.sessions
@@ -78,7 +87,8 @@ def handler(event: dict, context) -> dict:
                 },
                 'body': json.dumps({
                     'active_sessions': active_count,
-                    'session_id': session_id
+                    'session_id': session_id,
+                    'action': action
                 }),
                 'isBase64Encoded': False
             }
